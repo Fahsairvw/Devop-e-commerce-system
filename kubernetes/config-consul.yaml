@@ -11,8 +11,8 @@ spec:
     metadata:
       labels:
         app: emailservice
-      annotations:
-        consul.hashicorp.com/connect-inject: 'true'
+      # annotations:
+      #   consul.hashicorp.com/connect-inject: 'true'
     spec:
       containers:
       - name: server
