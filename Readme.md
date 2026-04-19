@@ -1,6 +1,24 @@
 # Consul Multi-Cluster Service Mesh with Failover
 
-A demo project that sets up a Consul service mesh across two Kubernetes clusters (AWS EKS and Linode) with automatic service failover between them.
+A DevOps project that deploys a multi-cloud, multi-cluster e-commerce system using **Consul** as the service mesh platform across **AWS EKS** and **Linode Kubernetes (LKS)**, with automatic service failover between clusters.
+
+The e-commerce application is deployed and configured following the tutorial by [TechWorld with Nana](https://www.youtube.com/watch?v=s3I1kKKfjtQ).
+
+> **Acknowledgements:**  
+> - Setup guide and Consul configuration: [TechWorld with Nana – Consul Crash Course](https://gitlab.com/twn-youtube/consul-crash-course) by Ms. Nana
+
+---
+
+## Tech Stack
+
+| Tool | Purpose |
+|---|---|
+| [Consul](https://www.consul.io/) | Service mesh, service discovery, mTLS, failover |
+| [AWS EKS](https://aws.amazon.com/eks/) | Primary Kubernetes cluster (cloud 1) |
+| [Linode LKE](https://www.linode.com/products/kubernetes/) | Secondary Kubernetes cluster (cloud 2) |
+| [Terraform](https://www.terraform.io/) | Infrastructure-as-code for AWS EKS provisioning |
+| [Helm](https://helm.sh/) | Consul deployment via HashiCorp Helm chart |
+| [kubectl](https://kubernetes.io/docs/reference/kubectl/) | Cluster management and resource deployment |
 
 ---
 
@@ -49,10 +67,12 @@ kubectl get svc
 
 ### Step 3: Deploy Microservices on EKS
 
+The application is the [GCP Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo) — a cloud-native e-commerce demo. Public GCP container images are used directly (no local build required).
+
 ```bash
 cd ../kubernetes
 
-# Deploy applications
+# Deploy all microservices
 kubectl apply -f config-consul.yaml
 
 # Verify pods are running
@@ -62,6 +82,8 @@ kubectl get pod
 ---
 
 ### Step 4: Install Consul on EKS
+
+Consul is deployed via the [official HashiCorp Helm chart](https://developer.hashicorp.com/consul/docs/reference/k8s/helm). Make sure the required [Consul ports](https://developer.hashicorp.com/consul/docs/reference/architecture/ports) are open between clusters.
 
 ```bash
 # Add the HashiCorp Helm repo
@@ -159,8 +181,8 @@ kubectl apply -f exported-service.yaml
 # Simulate a failure by deleting a service from EKS
 kubectl delete deployment shippingservice
 
-# Traffic should automatically reroute to the Linode cluster
-# The application should continue working without interruption
+# Traffic automatically reroutes to the Linode cluster
+# The application continues working without interruption
 ```
 
 ---
@@ -210,6 +232,7 @@ terraform destroy -var-file terraform.tfvars
 - Confirm both Consul servers are running: `kubectl get pod -l app=consul`
 - Check server logs: `kubectl logs -l app=consul,component=server`
 - Verify that external IPs are reachable between the two clusters.
+- Ensure required [Consul ports](https://developer.hashicorp.com/consul/docs/reference/architecture/ports) are open in your firewall/security groups.
 
 **Storage issues**
 - The EBS storage class must be type `gp3`, not `gp2`.
@@ -246,11 +269,13 @@ AWS Consul (eks) peers page showing an active peering connection with the "lks" 
 EKS peer details — Status: Active. Exported service: `shippingservice` (available for Linode to import).
 
 ![LKS Peer Details](images/lks-peer-details.png)
-LKS peer details — Imported service: `shippingservice` from eks (1 instance in the service mesh with proxy). Demonstrates the failover setup — if the EKS `shippingservice` fails, requests are rerouted to Linode.
+LKS peer details — Imported service: `shippingservice` from eks. Demonstrates failover — if EKS `shippingservice` goes down, traffic is automatically rerouted to Linode.
 
 ---
 
 ## References
 
-- [Consul Crash Course – GitLab](https://gitlab.com/twn-youtube/consul-crash-course)
-- [Consul Crash Course – YouTube](https://www.youtube.com/watch?v=s3I1kKKfjtQ)
+- [TechWorld with Nana – Consul Crash Course (YouTube)](https://www.youtube.com/watch?v=s3I1kKKfjtQ)
+- [TechWorld with Nana – Consul Crash Course (GitLab)](https://gitlab.com/twn-youtube/consul-crash-course)
+- [Consul Helm Chart Reference](https://developer.hashicorp.com/consul/docs/reference/k8s/helm)
+- [Consul Required Ports](https://developer.hashicorp.com/consul/docs/reference/architecture/ports)
